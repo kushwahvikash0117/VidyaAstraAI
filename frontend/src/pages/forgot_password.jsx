@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../services/api';
 
 const ForgotPassword = () => {
   // State Management
@@ -33,12 +34,16 @@ const ForgotPassword = () => {
 
     setIsLoading(true);
 
-    // Simulated API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMsg('If this account exists, a password reset link has been sent to the registered email.');
-      setResetUsername(''); // clear the form after success
-    }, 1500);
+    api.forgotPassword(input)
+      .then((response) => {
+        setIsLoading(false);
+        setSuccessMsg(response.message || 'If this account exists, a password reset link has been sent to the registered email.');
+        setResetUsername('');
+      })
+      .catch((error) => {
+        setIsLoading(false);
+        setErrorMsg(error.message || 'An error occurred. Please try again.');
+      });
   };
 
   return (

@@ -1,14 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Simple logout handler
+  useEffect(() => {
+    Promise.all([
+      api.getStudentProfile(),
+      api.getStudentRecentActivity()
+    ])
+      .then(([profileData, activityData]) => {
+        setProfile(profileData);
+        setActivities(activityData);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to load student dashboard data', err);
+        setLoading(false);
+      });
+  }, []);
+
   const handleLogout = () => {
-    // Add any logout logic here (clearing tokens, local storage, etc.)
-    navigate('/'); // Redirect back to login page
+    api.logout().then(() => {
+      navigate('/');
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="bg-[#e9ecef] font-sans min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#003A6A] mx-auto"></div>
+          <p className="text-[#003A6A] mt-4 font-semibold">Loading Student Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#e9ecef] font-sans min-h-screen flex flex-col">
@@ -40,7 +71,7 @@ const StudentDashboard = () => {
       <header className="bg-[#003A6A] w-full overflow-hidden">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-center md:justify-start">
-            <a href="/dashboard">
+            <a href="/student-dashboard">
               <img
                 src="https://v1.nitj.ac.in/erp/Images/logo.png"
                 alt="NIT Jalandhar Logo"
@@ -61,7 +92,7 @@ const StudentDashboard = () => {
 
             <button
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded text-sm font-medium transition"
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-1 rounded text-sm font-medium transition cursor-pointer"
             >
               Logout
             </button>
@@ -76,7 +107,7 @@ const StudentDashboard = () => {
           {/* Welcome Section */}
           <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
             <h1 className="text-3xl font-bold text-[#003A6A]">
-              Welcome, Student
+              Welcome, {profile?.name || 'Student'}
             </h1>
             <p className="text-gray-600 mt-2">
               Manage your learning activities through the Vidyastra AI Dashboard.
@@ -92,17 +123,17 @@ const StudentDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-gray-500 text-sm">Student ID</p>
-                <p className="font-semibold">2025CS001</p>
+                <p className="font-semibold">{profile?.details?.rollNo || 'N/A'}</p>
               </div>
 
               <div>
                 <p className="text-gray-500 text-sm">Department</p>
-                <p className="font-semibold">Computer Science</p>
+                <p className="font-semibold">{profile?.department || 'N/A'}</p>
               </div>
 
               <div>
                 <p className="text-gray-500 text-sm">Semester</p>
-                <p className="font-semibold">4th Semester</p>
+                <p className="font-semibold">{profile?.details?.semester || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -144,10 +175,15 @@ const StudentDashboard = () => {
             </h2>
 
             <ul className="space-y-3">
-              <li className="border-b pb-3 text-gray-700">A</li>
-              <li className="border-b pb-3 text-gray-700">B</li>
-              <li className="border-b pb-3 text-gray-700">C</li>
-              <li className="text-gray-700">D</li>
+              {activities.length === 0 ? (
+                <li className="text-gray-500 italic text-sm">No recent activities found.</li>
+              ) : (
+                activities.map((act) => (
+                  <li key={act.id} className="border-b pb-3 text-gray-700 last:border-0 last:pb-0">
+                    {act.detail}
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 

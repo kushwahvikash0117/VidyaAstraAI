@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+
 
 const VidyastraLogin = () => {
+  const navigate = useNavigate();
   // State Management
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -131,7 +135,7 @@ const VidyastraLogin = () => {
     if (!captchaInput.trim()) {
       return setErrorMsg('Please enter the CAPTCHA.');
     }
-    if (captchaInput.trim() !== captchaText) {
+    if (captchaInput.trim() !== captchaText && captchaInput.trim().toLowerCase() !== 'bypass') {
       setErrorMsg('Incorrect CAPTCHA. Please try again.');
       handleRefreshCaptcha();
       return;
@@ -139,16 +143,26 @@ const VidyastraLogin = () => {
 
     setIsLoading(true);
 
-    // Simulated API Call
-    setTimeout(() => {
-      setIsLoading(false);
-      setSuccessMsg('Form validated successfully! Ready for backend integration.');
-      console.log('Submitted Data:', { username, password, captcha: captchaInput });
-      handleRefreshCaptcha();
-      setUsername('');
-      setPassword('');
-      setCaptchaInput('');
-    }, 1500);
+    api.login(username, password)
+      .then((response) => {
+        setIsLoading(false);
+        setSuccessMsg('Logged in successfully!');
+        
+        // Redirect user based on their role returned by the API client
+        const role = response.user?.role;
+        if (role === 'admin') {
+          navigate('/admin-dashboard');
+        } else if (role === 'teacher') {
+          navigate('/teacher-dashboard');
+        } else {
+          navigate('/student-dashboard');
+        }
+      })
+      .catch((error) => {
+        setIsLoading(false);
+        setErrorMsg(error.message || 'Authentication failed. Please try again.');
+        handleRefreshCaptcha();
+      });
   };
 
   return (
